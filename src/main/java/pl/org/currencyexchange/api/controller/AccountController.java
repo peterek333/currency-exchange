@@ -1,7 +1,6 @@
 package pl.org.currencyexchange.api.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +34,6 @@ class AccountController {
     }
 
     @GetMapping("/{accountId}")
-//    todo - wymagane @Valid? albo @Validated, bo String nie wspiera @Valid?
     AccountDetailsResponse getAccount(@PathVariable @NotNull(message = "Account ID is required") Long accountId) {
         var query = new GetAccountQuery(accountId);
 

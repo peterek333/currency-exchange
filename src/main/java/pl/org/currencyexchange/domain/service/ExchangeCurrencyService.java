@@ -1,10 +1,13 @@
 package pl.org.currencyexchange.domain.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.org.currencyexchange.domain.command.ExchangeCurrencyCommand;
 import pl.org.currencyexchange.domain.dto.AccountDetailsDto;
+import pl.org.currencyexchange.domain.dto.ExchangeAmountCalculated;
+import pl.org.currencyexchange.domain.dto.ExchangeCurrencyDto;
 import pl.org.currencyexchange.domain.exception.AccountNotFoundException;
 import pl.org.currencyexchange.domain.exception.BusinessException;
 import pl.org.currencyexchange.domain.exception.NoPLNCurrencyException;
@@ -14,31 +17,23 @@ import pl.org.currencyexchange.domain.model.Currency;
 import pl.org.currencyexchange.domain.port.input.ExchangeCurrencyHandler;
 import pl.org.currencyexchange.domain.port.output.AccountRepository;
 import pl.org.currencyexchange.domain.port.output.PLNExchangeRateHolder;
+import pl.org.currencyexchange.domain.properties.CurrencyExchangeProperties;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 class ExchangeCurrencyService implements ExchangeCurrencyHandler {
 
-//    fixme - align with other places with BigDecimal
-    private static final int ACCURACY_PLACES = 4;
-
     private final AccountRepository accountRepository;
     private final PLNExchangeRateHolder plnExchangeRateHolder;
+    private final CurrencyExchangeProperties currencyExchangeProperties;
 
     @Override
     @Transactional
     public void handle(ExchangeCurrencyCommand command) {
-        //todo synchronize process
-        // option 1 - lock - doesnt support 1+ instances
-        // option 2 - select for update?
-
-        //todo - refactor
-        //  SRP
-        //  rethink to move NBP call outside transaction
-
         var exchangeCurrencyDto = ExchangeCurrencyDtoFactory.from(command);
 
         validateCurrencies(exchangeCurrencyDto.from(), exchangeCurrencyDto.to());
@@ -48,44 +43,67 @@ class ExchangeCurrencyService implements ExchangeCurrencyHandler {
 
         Currency forCurrency = getNotPLNCurrency(exchangeCurrencyDto.from(), exchangeCurrencyDto.to());
         var currencyExchangeRate = plnExchangeRateHolder.getCurrencyExchangeRate(forCurrency);
+        log.debug("Currency exchange rate: {}", currencyExchangeRate);
 
-        BigDecimal plnAmountToChange;
-        BigDecimal eurAmountToChange;
-        if (exchangeCurrencyDto.from() == Currency.PLN) {
-            eurAmountToChange = exchangeCurrencyDto.amount()
-                    //fixme - ACCURACE_PLACES requires align with another places because currently it may give inaccurate conversion
-                    .divide(currencyExchangeRate, ACCURACY_PLACES, RoundingMode.HALF_UP);
+        var exchangeAmountCalculated = calculateCurrencyAmount(exchangeCurrencyDto, currencyExchangeRate);
+        log.debug("Calculated exchange amount: {}", exchangeAmountCalculated);
 
-            plnAmountToChange = exchangeCurrencyDto.amount().negate();
+        validateRequiredAmount(exchangeCurrencyDto.from(), account, exchangeAmountCalculated);
 
-            //todo refaktor na czytelniejsza metode
-            if (account.plnBalance().add(plnAmountToChange).compareTo(BigDecimal.ZERO) < 0) {
-                throw new BusinessException(String.format("No required amount. Current PLN balance: %s but requires %s PLN",
-                        account.plnBalance(), plnAmountToChange.negate()));
-            }
-        } else {
-            plnAmountToChange = exchangeCurrencyDto.amount().multiply(currencyExchangeRate);
-
-            eurAmountToChange = exchangeCurrencyDto.amount().negate();
-
-            //todo refaktor na czytelniejsza metode
-            if (account.eurBalance().add(eurAmountToChange).compareTo(BigDecimal.ZERO) < 0) {
-                throw new BusinessException(String.format("No required amount. Current EUR balance: %s but requires %s EUR",
-                        account.eurBalance(), eurAmountToChange.negate()));
-            }
-        }
-
-        var changedAccount = new AccountDetailsDto(
-                account.id(),
-                account.fullName(),
-                account.plnBalance().add(plnAmountToChange),
-                account.eurBalance().add(eurAmountToChange)
-        );
+        var changedAccount = exchangeCurrencies(account, exchangeAmountCalculated);
+//        fixme - shouldn't log "Account" data
+        log.debug("Account before change: {}", account);
+        log.debug("Account after change: {}", changedAccount);
 
         accountRepository.save(changedAccount);
     }
 
-//    fixme - refactor to dedicated class SRP
+    //    fixme - refactor to dedicated class SRP
+    private void validateRequiredAmount(Currency from, AccountDetailsDto account, ExchangeAmountCalculated exchangeAmountCalculated) {
+        if (from == Currency.PLN) {
+            if (account.plnBalance().add(exchangeAmountCalculated.plnAmountToChange()).compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessException(String.format("No required amount. Current PLN balance: %s but requires %s PLN",
+                        account.plnBalance(), exchangeAmountCalculated.plnAmountToChange().negate()));
+            }
+        } else {
+            if (account.eurBalance().add(exchangeAmountCalculated.eurAmountToChange()).compareTo(BigDecimal.ZERO) < 0) {
+                throw new BusinessException(String.format("No required amount. Current EUR balance: %s but requires %s EUR",
+                        account.eurBalance(), exchangeAmountCalculated.eurAmountToChange().negate()));
+            }
+        }
+    }
+
+    //    fixme - refactor to dedicated class SRP
+    private ExchangeAmountCalculated calculateCurrencyAmount(ExchangeCurrencyDto exchangeCurrencyDto, BigDecimal currencyExchangeRate) {
+        BigDecimal plnAmountToChange;
+        BigDecimal eurAmountToChange;
+
+        if (exchangeCurrencyDto.from() == Currency.PLN) {
+            eurAmountToChange = exchangeCurrencyDto.amount()
+                    .divide(currencyExchangeRate, currencyExchangeProperties.getRoundingScale(), RoundingMode.HALF_EVEN);
+
+            plnAmountToChange = exchangeCurrencyDto.amount().negate();
+        } else {
+            plnAmountToChange = exchangeCurrencyDto.amount()
+                    .multiply(currencyExchangeRate)
+                    .setScale(currencyExchangeProperties.getRoundingScale(), RoundingMode.HALF_EVEN);;
+
+            eurAmountToChange = exchangeCurrencyDto.amount().negate();
+        }
+
+        return new ExchangeAmountCalculated(plnAmountToChange, eurAmountToChange);
+    }
+
+    private AccountDetailsDto exchangeCurrencies(AccountDetailsDto account, ExchangeAmountCalculated exchangeAmountCalculated) {
+        return new AccountDetailsDto(
+                account.id(),
+                account.fullName(),
+                account.plnBalance().add(exchangeAmountCalculated.plnAmountToChange()),
+                account.eurBalance().add(exchangeAmountCalculated.eurAmountToChange())
+        );
+    }
+
+    //    fixme - refactor to dedicated class SRP
     private void validateCurrencies(Currency from, Currency to) {
         if (from == to) {
             throw new SameCurrencyException();

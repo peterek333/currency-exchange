@@ -16,7 +16,7 @@ class CreateAccountService implements CreateAccountHandler {
     private final AccountRepository accountRepository;
 
     @Override
-    @Transactional  //fixme - could be required if entity will contains more relations
+    @Transactional
     public CreatedAccountDto handle(CreateAccountCommand command) {
         var createAccountDto = CreateAccountDtoFactory.from(command);
 

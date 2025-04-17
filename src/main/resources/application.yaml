@@ -1,6 +1,11 @@
 currency-exchange:
   custom:
     db-path: ./db/currency-exchange-db
+    rounding-scale: 4
+
+logging:
+  level:
+    pl.org.currencyexchange: DEBUG
 
 spring:
   application:
