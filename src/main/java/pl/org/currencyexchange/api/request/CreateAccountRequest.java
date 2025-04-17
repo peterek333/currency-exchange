@@ -15,5 +15,5 @@ public record CreateAccountRequest(
 
         @NotNull(message = "Initial balance is required")
         @DecimalMin(value = "0.0", message = "Initial balance must be 0 or greater")
-        BigDecimal initialBalance
+        BigDecimal plnInitialBalance
 ) {}

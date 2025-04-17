@@ -1,0 +1,16 @@
+currency-exchange:
+  custom:
+    db-path: ./db/currency-exchange-db
+
+spring:
+  application:
+    name: currency-exchange
+  datasource:
+    url: jdbc:h2:file:${currency-exchange.custom.db-path};DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

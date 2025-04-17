@@ -1,7 +1,10 @@
 package pl.org.currencyexchange.domain.port.input;
 
-public interface CreateAccountCase {
+import pl.org.currencyexchange.domain.command.CreateAccountCommand;
+import pl.org.currencyexchange.domain.dto.CreatedAccountDto;
 
-    public void createAccount
+public interface CreateAccountHandler {
+
+    CreatedAccountDto handle(CreateAccountCommand command);
 
 }

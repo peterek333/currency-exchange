@@ -5,5 +5,5 @@ import java.math.BigDecimal;
 public record CreateAccountCommand(
         String firstName,
         String lastName,
-        BigDecimal initialBalance
+        BigDecimal plnInitialBalance
 ) {}

@@ -7,15 +7,26 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.org.currencyexchange.api.request.ExchangeCurrencyRequest;
+import pl.org.currencyexchange.domain.command.ExchangeCurrencyCommand;
+import pl.org.currencyexchange.domain.port.input.ExchangeCurrencyHandler;
 
 @RestController
 @RequestMapping("/api/v1/exchange")
 @RequiredArgsConstructor
 class CurrencyExchangeController {
 
+    private final ExchangeCurrencyHandler exchangeCurrencyHandler;
+
     @PostMapping
     void exchangeCurrency(@Valid @RequestBody ExchangeCurrencyRequest exchangeCurrencyRequest) {
+        var command = new ExchangeCurrencyCommand(
+                exchangeCurrencyRequest.accountId(),
+                exchangeCurrencyRequest.fromCurrency(),
+                exchangeCurrencyRequest.toCurrency(),
+                exchangeCurrencyRequest.amount()
+        );
 
+        exchangeCurrencyHandler.handle(command);
     }
 
 }
