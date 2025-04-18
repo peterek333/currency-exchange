@@ -86,7 +86,7 @@ class ExchangeCurrencyService implements ExchangeCurrencyHandler {
         } else {
             plnAmountToChange = exchangeCurrencyDto.amount()
                     .multiply(currencyExchangeRate)
-                    .setScale(currencyExchangeProperties.getRoundingScale(), RoundingMode.HALF_EVEN);;
+                    .setScale(currencyExchangeProperties.getRoundingScale(), RoundingMode.HALF_EVEN);
 
             eurAmountToChange = exchangeCurrencyDto.amount().negate();
         }

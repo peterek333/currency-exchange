@@ -13,12 +13,10 @@ public class NbpWebClient {
     private static final String NBP_EXCHANGE_RATES_A_URL = "https://api.nbp.pl/api/exchangerates/rates/a/";
 
     public String fetchExchangeRate(Currency forCurrency) {
-        var response = restTemplate.getForObject(
+        return restTemplate.getForObject(
                 NBP_EXCHANGE_RATES_A_URL + forCurrency.name().toLowerCase(),
                 String.class
         );
-
-        return response;
     }
 
 }

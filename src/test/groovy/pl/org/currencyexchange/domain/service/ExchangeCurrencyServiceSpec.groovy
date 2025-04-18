@@ -5,7 +5,7 @@ import pl.org.currencyexchange.domain.dto.AccountDetailsDto
 import pl.org.currencyexchange.domain.model.Currency
 import pl.org.currencyexchange.domain.port.output.AccountRepository
 import pl.org.currencyexchange.domain.port.output.PLNExchangeRateHolder
-import pl.org.currencyexchange.domain.properties.CurrencyExchangeProperties;
+import pl.org.currencyexchange.domain.properties.CurrencyExchangeProperties
 import spock.lang.Specification
 import spock.lang.Unroll
 

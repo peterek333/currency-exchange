@@ -3,7 +3,7 @@
 ## Opis projektu
 Aplikacja serwująca wymianę walut PLN/EUR oraz EUR/PLN przez REST API.
 
-Zaprojektowana w architekture heksagonalnej używającej wzorca CQRS.
+Zaprojektowana w architekturze heksagonalnej używającej wzorca CQRS.
 
 Baza danych H2 zapisująca do pliku (persistence).
 
@@ -25,7 +25,7 @@ lub uruchomić w ulubionym IDE wspierającym JVM :)
 - Groovy/Spock w testach nadaje czytelności (można dodać tekst do sekcji given/when/then)
 
 ## Minusy rozwiązania
-- **Największy problem** - rozdzielenie persystencji (Entity, repozytorium) od domeny skomplikowało utrzymanie transakcji (więcej w sekcji [Problem transakcyjności i skalowalności](#problem-transakcyjności-i-skalowalności))
+- **Największy problem** - rozdzielenie persystencji (Entity, repozytorium) od domeny skomplikowało utrzymanie transakcji (więcej w sekcji [Problem transakcyjności i skalowalności](#problem-transakcyjności-i-skalowalności--rozwiązania))
 - Architektura heksagonalna i CQRS wygenerowały dużo kodu - overengineering dla tak prostego rozwiązania
 
 ## Problem transakcyjności i skalowalności + rozwiązania
