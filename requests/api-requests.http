@@ -1,0 +1,38 @@
+### Create account
+POST http://localhost:8080/api/v1/accounts
+Content-Type: application/json
+
+{
+  "firstName": "Jan",
+  "lastName": "Kowalski",
+  "plnInitialBalance": 500
+}
+
+### Get account by ID
+GET http://localhost:8080/api/v1/accounts/1
+Accept: application/json
+
+
+### Exchange currency for account PLN -> EUR
+POST http://localhost:8080/api/v1/exchange
+Content-Type: application/json
+Accept: application/json
+
+{
+  "accountId": 1,
+  "fromCurrency": "PLN",
+  "toCurrency": "EUR",
+  "amount": 100
+}
+
+### Exchange currency for account EUR -> PLN
+POST http://localhost:8080/api/v1/exchange
+Content-Type: application/json
+Accept: application/json
+
+{
+  "accountId": 1,
+  "fromCurrency": "EUR",
+  "toCurrency": "PLN",
+  "amount": 25
+}
